@@ -1,8 +1,10 @@
-import React, { useRef, useEffect } from 'react';  // Fix import statement
+import React, { useRef, useEffect } from 'react';
 import * as tf from '@tensorflow/tfjs';
 import * as facemesh from '@tensorflow-models/facemesh';
 import Webcam from 'react-webcam';
 import './App.css';
+import { TRIANGULATION } from './utilities';
+import { drawpath } from './utilities';
 
 function App() {
   const webcamRef = useRef(null);
@@ -52,6 +54,18 @@ function App() {
     const drawMesh = (faces, ctx) => {
       // Loop through each prediction
       faces.forEach((face) => {
+        const keypoints = face.scaledMesh;
+
+        //Lets draw triangles
+        for(let i = 0; i < TRIANGULATION.length / 3; i++){
+          const points = [
+            TRIANGULATION[i * 3],
+            TRIANGULATION[i * 3 + 1],
+            TRIANGULATION[i * 3 + 2]
+          ].map((index) => keypoints[index]);
+          drawpath(ctx,points,true);
+        }
+
         // Draw facial keypoints
         for (let i = 0; i < face.scaledMesh.length; i++) {
           const x = face.scaledMesh[i][0];
@@ -59,7 +73,7 @@ function App() {
 
           ctx.beginPath();
           ctx.arc(x, y, 1, 0, 3 * Math.PI);
-          ctx.fillStyle = 'red';
+          ctx.fillStyle = 'blue';
           ctx.fill();
         }
       });
@@ -70,35 +84,37 @@ function App() {
 
   return (
     <div className="App">
-      <Webcam
-        ref={webcamRef}
-        style={{
-          position: 'absolute',
-          marginLeft: 'auto',
-          marginRight: 'auto',
-          left: 0,
-          right: 0,
-          textAlign: 'center',
-          zIndex: 10,
-          width: 640,
-          height: 480,
-        }}
-      />
+      <header className='App-header'>
+        <Webcam
+          ref={webcamRef}
+          style={{
+            position: 'absolute',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            left: 0,
+            right: 0,
+            textAlign: 'center',
+            zIndex: 10,
+            width: 640,
+            height: 480,
+          }}
+        />
 
-      <canvas
-        ref={canvasRef}
-        style={{
-          position: 'absolute',
-          marginLeft: 'auto',
-          marginRight: 'auto',
-          left: 0,
-          right: 0,
-          textAlign: 'center',
-          zIndex: 10,
-          width: 640,
-          height: 480,
-        }}
-      />
+        <canvas
+          ref={canvasRef}
+          style={{
+            position: 'absolute',
+            marginLeft: 'auto',
+            marginRight: 'auto',
+            left: 0,
+            right: 0,
+            textAlign: 'center',
+            zIndex: 10,
+            width: 640,
+            height: 480,
+          }}
+        />
+      </header>
     </div>
   );
 }

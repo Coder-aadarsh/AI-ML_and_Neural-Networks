@@ -1,70 +1,127 @@
-# Getting Started with Create React App
+# Real-Time AI Face Landmark Detection
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Overview
 
-## Available Scripts
+This project utilizes TensorFlow.js and the FaceMesh model to achieve real-time face landmark detection in a React application. By integrating these technologies, the application captures facial keypoints through a webcam feed and displays them on an HTML canvas.
 
-In the project directory, you can run:
+## Resources
 
-### `npm start`
+- TensorFlow.js Models: [TensorFlow.js Models](https://www.tensorflow.org/js/models)
+- HTML Canvas: [MDN Web Docs - Canvas](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Getting Started
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+1. Create a React app.
+2. Install the necessary dependencies:
+   - `@tensorflow/tfjs`
+   - `@tensorflow-models/facemesh`
+   - `react-webcam`
 
-### `npm test`
+Import React and necessary libraries, including TensorFlow.js, the FaceMesh model, the react-webcam component, and the CSS file for styling.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```javascript
+import React, { useRef, useEffect } from 'react';
+import * as tf from '@tensorflow/tfjs';
+import * as facemesh from '@tensorflow-models/facemesh';
+import Webcam from 'react-webcam';
+import './App.css';
+```
 
-### `npm run build`
+## Application Components
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Define Functional Component
+Create the App functional component that will serve as the main application.
+Utilize the useEffect hook to run code after the component has mounted. Inside it, load the FaceMesh model and continuously detect faces at a 100ms interval.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```javascript
+function App() {
+  const webcamRef = useRef(null);
+  const canvasRef = useRef(null);
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+  useEffect(() => {
+    const runFacemesh = async () => {
+      const net = await facemesh.load();
+      setInterval(() => {
+        detectFace(net);
+      }, 100);
+    };
+    runFacemesh();
+  }, []);
+```
 
-### `npm run eject`
+### Face Detection Function
+Implement the detectFace function, which checks if the webcam is loaded and if so, captures video properties, performs face detection using the FaceMesh model, and draws the facial keypoints on the canvas.
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```javascript
+const detectFace = async (net) => {
+  if (
+    typeof webcamRef.current !== 'undefined' &&
+    webcamRef.current !== null &&
+    webcamRef.current.video.readyState === 4
+  ) {
+    const video = webcamRef.current.video;
+    const videoWidth = video.videoWidth;
+    const videoHeight = video.videoHeight;
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+    video.width = videoWidth;
+    video.height = videoHeight;
+    canvasRef.current.width = videoWidth;
+    canvasRef.current.height = videoHeight;
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+    const face = await net.estimateFaces(video);
+    const ctx = canvasRef.current.getContext('2d');
+    drawMesh(face, ctx);
+  }
+};
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### Draw Mesh Function
+Implement the drawMesh function, which takes the detected faces and draws facial keypoints on the canvas using red circles.
 
-## Learn More
+```javascript
+const drawMesh = (faces, ctx) => {
+  faces.forEach((face) => {
+    for (let i = 0; i < face.scaledMesh.length; i++) {
+      const x = face.scaledMesh[i][0];
+      const y = face.scaledMesh[i][1];
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+      ctx.beginPath();
+      ctx.arc(x, y, 1, 0, 3 * Math.PI);
+      ctx.fillStyle = 'red';
+      ctx.fill();
+    }
+  });
+};
+```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### Render Components
+Return the JSX elements for rendering the webcam and canvas components within the App component.
 
-### Code Splitting
+```javascript
+return (
+  <div className="App">
+    <header className='App-header'>
+      <Webcam
+        ref={webcamRef}
+        style={{
+          // Webcam styling
+        }}
+      />
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+      <canvas
+        ref={canvasRef}
+        style={{
+          // Canvas styling
+        }}
+      />
+    </header>
+  </div>
+);
+}
+```
 
-### Analyzing the Bundle Size
+## Utilities.js
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+This file contains a utility function, `drawPath`, designed to draw a path on the canvas connecting specified points. The function takes a canvas rendering context (`ctx`), an array of points, and a boolean value `closePath` as parameters.
 
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+By following these steps, the React application seamlessly integrates TensorFlow.js and FaceMesh to perform real-time face detection, displaying the detected facial keypoints on an HTML canvas.
